@@ -53,6 +53,8 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
     private ReactContext mReactContext;
     private Callback cb_autoSend_succ = null;
     private Callback cb_autoSend_err = null;
+    private static final String SENT = "SMS_SENT";
+    private static final String DELIVERED = "SMS_DELIVERED";
 
     public SmsModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -285,8 +287,6 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         cb_autoSend_err = errorCallback;
 
         try {
-            String SENT = "SMS_SENT";
-            String DELIVERED = "SMS_DELIVERED";
             ArrayList<PendingIntent> sentPendingIntents = new ArrayList<PendingIntent>();
             ArrayList<PendingIntent> deliveredPendingIntents = new ArrayList<PendingIntent>();
 

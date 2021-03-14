@@ -59,6 +59,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         mReactContext = reactContext;
         smsList = new HashMap<Long, String>();
         context = reactContext.getApplicationContext();
+        registerBroadcastReceivers();
     }
 
     @Override
@@ -227,9 +228,54 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             cb_autoSend_err.invoke(message, id);
             cb_autoSend_err = null;
         }
-
     }
 
+    private void registerBroadcastReceivers() {
+        //---when the SMS has been sent---
+        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context arg0, Intent arg1) {
+                int id = arg1.getIntExtra("id", 0);
+                switch (getResultCode()) {
+                    case Activity.RESULT_OK:
+                        sendCallback(id, "SMS sent", true);
+                        break;
+                    case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                        sendCallback(id, "Generic failure", false);
+                        break;
+                    case SmsManager.RESULT_ERROR_NO_SERVICE:
+                        sendCallback(id, "No service", false);
+                        break;
+                    case SmsManager.RESULT_ERROR_NULL_PDU:
+                        sendCallback(id, "Null PDU", false);
+                        break;
+                    case SmsManager.RESULT_ERROR_RADIO_OFF:
+                        sendCallback(id, "Radio off", false);
+                        break;
+                }
+            }
+        }, new IntentFilter(SENT));
+
+        //---when the SMS has been delivered---
+        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context arg0, Intent arg1) {
+                int id = arg1.getIntExtra("id", 0);
+                WritableMap params = Arguments.createMap();
+                params.putInt("id", id);
+                switch (getResultCode()) {
+                    case Activity.RESULT_OK:
+                        params.putString("result", "SMS delivered");
+                        sendEvent(mReactContext, "sms_onDelivery", params);
+                        break;
+                    case Activity.RESULT_CANCELED:
+                        params.putString("result", "SMS not delivered");
+                        sendEvent(mReactContext, "sms_onDelivery", params);
+                        break;
+                }
+            }
+        }, new IntentFilter(DELIVERED));                                                    
+    }
 
     @ReactMethod
     public void autoSend(int id, String phoneNumber, String message, final Callback errorCallback,
@@ -252,51 +298,6 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             deliveredIntent.putExtra("id", id);
             PendingIntent deliveredPI = PendingIntent.getBroadcast(context, id, deliveredIntent, PendingIntent.FLAG_ONE_SHOT);
             
-            //---when the SMS has been sent---
-            context.registerReceiver(new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context arg0, Intent arg1) {
-                    int id = arg1.getIntExtra("id", 0);
-                    switch (getResultCode()) {
-                        case Activity.RESULT_OK:
-                            sendCallback(id, "SMS sent", true);
-                            break;
-                        case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-                            sendCallback(id, "Generic failure", false);
-                            break;
-                        case SmsManager.RESULT_ERROR_NO_SERVICE:
-                            sendCallback(id, "No service", false);
-                            break;
-                        case SmsManager.RESULT_ERROR_NULL_PDU:
-                            sendCallback(id, "Null PDU", false);
-                            break;
-                        case SmsManager.RESULT_ERROR_RADIO_OFF:
-                            sendCallback(id, "Radio off", false);
-                            break;
-                    }
-                }
-            }, new IntentFilter(SENT));
-
-            //---when the SMS has been delivered---
-            context.registerReceiver(new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context arg0, Intent arg1) {
-                    int id = arg1.getIntExtra("id", 0);
-                    WritableMap params = Arguments.createMap();
-                    params.putInt("id", id);
-                    switch (getResultCode()) {
-                        case Activity.RESULT_OK:
-                            params.putString("result", "SMS delivered");
-                            sendEvent(mReactContext, "sms_onDelivery", params);
-                            break;
-                        case Activity.RESULT_CANCELED:
-                            params.putString("result", "SMS not delivered");
-                            sendEvent(mReactContext, "sms_onDelivery", params);
-                            break;
-                    }
-                }
-            }, new IntentFilter(DELIVERED));
-
             SmsManager sms = SmsManager.getDefault();
             ArrayList<String> parts = sms.divideMessage(message);
 

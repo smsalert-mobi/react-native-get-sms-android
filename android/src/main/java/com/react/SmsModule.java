@@ -11,6 +11,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.Arguments;
 
 import android.content.ContentValues;
 import android.os.Bundle;
@@ -28,6 +29,8 @@ import android.net.Uri;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
+
+import androidx.annotation.Nullable;
 
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
@@ -212,16 +215,16 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         }
     }
 
-    private void sendEvent(ReactContext reactContext, String eventName, String params) {
+    private void sendEvent(ReactContext reactContext, String eventName, @Nullable WritableMap params) {
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName, params);
     }
 
-    private void sendCallback(String message, boolean success) {
+    private void sendCallback(int id, String message, boolean success) {
         if (success && cb_autoSend_succ != null) {
-            cb_autoSend_succ.invoke(message);
+            cb_autoSend_succ.invoke(message, id);
             cb_autoSend_succ = null;
         } else if (!success && cb_autoSend_err != null) {
-            cb_autoSend_err.invoke(message);
+            cb_autoSend_err.invoke(message, id);
             cb_autoSend_err = null;
         }
 
@@ -229,7 +232,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
 
 
     @ReactMethod
-    public void autoSend(String phoneNumber, String message, final Callback errorCallback,
+    public void autoSend(int id, String phoneNumber, String message, final Callback errorCallback,
                          final Callback successCallback) {
 
         cb_autoSend_succ = successCallback;
@@ -241,28 +244,30 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             ArrayList<PendingIntent> sentPendingIntents = new ArrayList<PendingIntent>();
             ArrayList<PendingIntent> deliveredPendingIntents = new ArrayList<PendingIntent>();
 
-            PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, new Intent(SENT), 0);
-            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(DELIVERED), 0);
-
+            PendingIntent sentPI = PendingIntent.getBroadcast(context, id, new Intent(SENT), 0);
+            sentPI.putExtra("id", id);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, id, new Intent(DELIVERED), 0);
+            deliveredPI.putExtra("id", id);
             //---when the SMS has been sent---
             context.registerReceiver(new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context arg0, Intent arg1) {
+                    int id = arg1.getIntExtra("id", 0);
                     switch (getResultCode()) {
                         case Activity.RESULT_OK:
-                            sendCallback("SMS sent", true);
+                            sendCallback(id, "SMS sent", true);
                             break;
                         case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-                            sendCallback("Generic failure", false);
+                            sendCallback(id, "Generic failure", false);
                             break;
                         case SmsManager.RESULT_ERROR_NO_SERVICE:
-                            sendCallback("No service", false);
+                            sendCallback(id, "No service", false);
                             break;
                         case SmsManager.RESULT_ERROR_NULL_PDU:
-                            sendCallback("Null PDU", false);
+                            sendCallback(id, "Null PDU", false);
                             break;
                         case SmsManager.RESULT_ERROR_RADIO_OFF:
-                            sendCallback("Radio off", false);
+                            sendCallback(id, "Radio off", false);
                             break;
                     }
                 }
@@ -272,12 +277,17 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             context.registerReceiver(new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context arg0, Intent arg1) {
+                    int id = arg1.getIntExtra("id", 0);
+                    WritableMap params = Arguments.createMap();
+                    params.putInt("id", id);
                     switch (getResultCode()) {
                         case Activity.RESULT_OK:
-                            sendEvent(mReactContext, "sms_onDelivery", "SMS delivered");
+                            params.putString("result", "SMS delivered");
+                            sendEvent(mReactContext, "sms_onDelivery", params);
                             break;
                         case Activity.RESULT_CANCELED:
-                            sendEvent(mReactContext, "sms_onDelivery", "SMS not delivered");
+                            params.putString("result", "SMS not delivered");
+                            sendEvent(mReactContext, "sms_onDelivery", params);
                             break;
                     }
                 }
@@ -298,7 +308,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             context.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
 
         } catch (Exception e) {
-            sendCallback(e.getMessage(), false);
+            sendCallback(id, e.getMessage(), false);
         }
     }
 }

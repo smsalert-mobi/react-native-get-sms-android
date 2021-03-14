@@ -246,11 +246,11 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
 
             Intent sentIntent = new Intent(SENT);
             sentIntent.putExtra("id", id);
-            PendingIntent sentPI = PendingIntent.getBroadcast(context, id, sentIntent, 0);
-            
+            PendingIntent sentPI = PendingIntent.getBroadcast(context, id, sentIntent, PendingIntent.FLAG_ONE_SHOT);
+
             Intent deliveredIntent = new Intent(DELIVERED);
             deliveredIntent.putExtra("id", id);
-            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, id, deliveredIntent, 0);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, id, deliveredIntent, PendingIntent.FLAG_ONE_SHOT);
             
             //---when the SMS has been sent---
             context.registerReceiver(new BroadcastReceiver() {

@@ -222,12 +222,12 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName, params);
     }
 
-    private void sendCallback(int id, String message, boolean success) {
+    private void sendCallback(ReadableMap params, String message, boolean success) {
         if (success && cb_autoSend_succ != null) {
-            cb_autoSend_succ.invoke(message, id);
+            cb_autoSend_succ.invoke(message, params);
             cb_autoSend_succ = null;
         } else if (!success && cb_autoSend_err != null) {
-            cb_autoSend_err.invoke(message, id);
+            cb_autoSend_err.invoke(message, params);
             cb_autoSend_err = null;
         }
     }
@@ -237,22 +237,22 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         context.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context arg0, Intent arg1) {
-                int id = arg1.getIntExtra("id", 0);
+                ReadableMap params = arg1.getSerializableExtra("params");
                 switch (getResultCode()) {
                     case Activity.RESULT_OK:
-                        sendCallback(id, "SMS sent", true);
+                        sendCallback(params, "SMS sent", true);
                         break;
                     case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-                        sendCallback(id, "Generic failure", false);
+                        sendCallback(params, "Generic failure", false);
                         break;
                     case SmsManager.RESULT_ERROR_NO_SERVICE:
-                        sendCallback(id, "No service", false);
+                        sendCallback(params, "No service", false);
                         break;
                     case SmsManager.RESULT_ERROR_NULL_PDU:
-                        sendCallback(id, "Null PDU", false);
+                        sendCallback(params, "Null PDU", false);
                         break;
                     case SmsManager.RESULT_ERROR_RADIO_OFF:
-                        sendCallback(id, "Radio off", false);
+                        sendCallback(params, "Radio off", false);
                         break;
                 }
             }
@@ -262,9 +262,8 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         context.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context arg0, Intent arg1) {
-                int id = arg1.getIntExtra("id", 0);
-                WritableMap params = Arguments.createMap();
-                params.putInt("id", id);
+                ReadableMap params = arg1.getSerializableExtra("params");
+
                 switch (getResultCode()) {
                     case Activity.RESULT_OK:
                         params.putString("result", "SMS delivered");
@@ -280,7 +279,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
     }
 
     @ReactMethod
-    public void autoSend(int id, String phoneNumber, String message, final Callback errorCallback,
+    public void autoSend(String phoneNumber, String message, ReadableMap params, final Callback errorCallback,
                          final Callback successCallback) {
 
         cb_autoSend_succ = successCallback;
@@ -291,12 +290,12 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             ArrayList<PendingIntent> deliveredPendingIntents = new ArrayList<PendingIntent>();
 
             Intent sentIntent = new Intent(SENT);
-            sentIntent.putExtra("id", id);
-            PendingIntent sentPI = PendingIntent.getBroadcast(context, id, sentIntent, PendingIntent.FLAG_ONE_SHOT);
+            sentIntent.putExtra("params", params);
+            PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, sentIntent, 0);
 
             Intent deliveredIntent = new Intent(DELIVERED);
-            deliveredIntent.putExtra("id", id);
-            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, id, deliveredIntent, PendingIntent.FLAG_ONE_SHOT);
+            deliveredIntent.putExtra("params", params);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, deliveredIntent, 0);
             
             SmsManager sms = SmsManager.getDefault();
             ArrayList<String> parts = sms.divideMessage(message);

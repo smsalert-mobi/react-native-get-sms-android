@@ -263,15 +263,16 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             @Override
             public void onReceive(Context arg0, Intent arg1) {
                 String params = arg1.getStringExtra("params");
-
+                WritableMap response = Arguments.createMap();
+                response.putString("params", params);
                 switch (getResultCode()) {
                     case Activity.RESULT_OK:
-                        params.putString("result", "SMS delivered");
-                        sendEvent(mReactContext, "sms_onDelivery", params);
+                        response.putString("result", "SMS delivered");
+                        sendEvent(mReactContext, "sms_onDelivery", response);
                         break;
                     case Activity.RESULT_CANCELED:
-                        params.putString("result", "SMS not delivered");
-                        sendEvent(mReactContext, "sms_onDelivery", params);
+                        response.putString("result", "SMS not delivered");
+                        sendEvent(mReactContext, "sms_onDelivery", response);
                         break;
                 }
             }

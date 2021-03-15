@@ -222,7 +222,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName, params);
     }
 
-    private void sendCallback(ReadableMap params, String message, boolean success) {
+    private void sendCallback(String params, String message, boolean success) {
         if (success && cb_autoSend_succ != null) {
             cb_autoSend_succ.invoke(message, params);
             cb_autoSend_succ = null;
@@ -237,7 +237,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         context.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context arg0, Intent arg1) {
-                ReadableMap params = arg1.getSerializableExtra("params");
+                String params = arg1.getStringExtra("params");
                 switch (getResultCode()) {
                     case Activity.RESULT_OK:
                         sendCallback(params, "SMS sent", true);
@@ -262,7 +262,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         context.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context arg0, Intent arg1) {
-                ReadableMap params = arg1.getSerializableExtra("params");
+                String params = arg1.getStringExtra("params");
 
                 switch (getResultCode()) {
                     case Activity.RESULT_OK:
@@ -279,7 +279,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
     }
 
     @ReactMethod
-    public void autoSend(String phoneNumber, String message, ReadableMap params, final Callback errorCallback,
+    public void autoSend(String phoneNumber, String message, String params, final Callback errorCallback,
                          final Callback successCallback) {
 
         cb_autoSend_succ = successCallback;
@@ -312,7 +312,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             context.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
 
         } catch (Exception e) {
-            sendCallback(id, e.getMessage(), false);
+            sendCallback(params, e.getMessage(), false);
         }
     }
 }

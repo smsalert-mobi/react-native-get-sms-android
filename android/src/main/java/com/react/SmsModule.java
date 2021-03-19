@@ -35,6 +35,8 @@ import androidx.annotation.Nullable;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 
+import android.util.Log;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
@@ -55,6 +57,8 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
     private Callback cb_autoSend_err = null;
     private static final String SENT = "SMS_SENT";
     private static final String DELIVERED = "SMS_DELIVERED";
+
+    private static final String TAG = "GetSmsAndroid";
 
     public SmsModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -223,6 +227,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
     }
 
     private void sendCallback(String params, String message, boolean success) {
+        Log.d(TAG, "sendCallback: " + params);
         if (success && cb_autoSend_succ != null) {
             cb_autoSend_succ.invoke(message, params);
             cb_autoSend_succ = null;
@@ -238,6 +243,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             @Override
             public void onReceive(Context arg0, Intent arg1) {
                 String params = arg1.getStringExtra("params");
+                Log.d(TAG, "registerBroadcastReceivers: " + params);
                 switch (getResultCode()) {
                     case Activity.RESULT_OK:
                         sendCallback(params, "SMS sent", true);
@@ -265,6 +271,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
                 String params = arg1.getStringExtra("params");
                 WritableMap response = Arguments.createMap();
                 response.putString("params", params);
+                Log.d(TAG, "registerReceiver: " + params);
                 switch (getResultCode()) {
                     case Activity.RESULT_OK:
                         response.putString("result", "SMS delivered");
@@ -292,10 +299,12 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
 
             Intent sentIntent = new Intent(SENT);
             sentIntent.putExtra("params", params);
+            Log.d(TAG, "autoSend#sentIntent.putExtra: " + params);
             PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, sentIntent, 0);
 
             Intent deliveredIntent = new Intent(DELIVERED);
             deliveredIntent.putExtra("params", params);
+            Log.d(TAG, "autoSend#deliveredIntent.putExtra: " + params);
             PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, deliveredIntent, 0);
             
             SmsManager sms = SmsManager.getDefault();

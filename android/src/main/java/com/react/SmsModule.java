@@ -240,12 +240,12 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
     }
 
     private int getUniqueInt(String params) {
-        int i = (int) (new Date().getTime() % 1000)
+        int i = (int) (new Date().getTime() % 1000);
 
-        JSONObject obj = new JSONObject(params)
-        int id = obj.getInt("id")
+        JSONObject obj = new JSONObject(params);
+        int id = obj.getInt("id");
 
-        return id * 1000 + i
+        return id * 1000 + i;
     }
 
     private void registerBroadcastReceivers() {
@@ -308,7 +308,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             ArrayList<PendingIntent> sentPendingIntents = new ArrayList<PendingIntent>();
             ArrayList<PendingIntent> deliveredPendingIntents = new ArrayList<PendingIntent>();
 
-            int requestCode = getUniqueInt(params)
+            int requestCode = getUniqueInt(params);
 
             Intent sentIntent = new Intent(SENT);
             sentIntent.putExtra("params", params);

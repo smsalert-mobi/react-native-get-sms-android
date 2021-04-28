@@ -43,6 +43,7 @@ import java.util.ArrayList;
 
 import java.util.Date;
 
+import org.json.JSONException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -239,7 +240,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         }
     }
 
-    private int getUniqueInt(String params) {
+    private int getUniqueInt(String params) throws JSONException {
         int i = (int) (new Date().getTime() % 1000);
 
         JSONObject obj = new JSONObject(params);

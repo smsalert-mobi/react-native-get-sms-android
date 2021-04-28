@@ -41,6 +41,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
 
+import java.util.Date;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -237,6 +239,15 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
         }
     }
 
+    private int getUniqueInt(String params) {
+        int i = (int) (new Date().getTime() % 1000)
+
+        JSONObject obj = new JSONObject(params)
+        int id = obj.getInt("id")
+
+        return id * 1000 + i
+    }
+
     private void registerBroadcastReceivers() {
         //---when the SMS has been sent---
         context.registerReceiver(new BroadcastReceiver() {
@@ -297,15 +308,17 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             ArrayList<PendingIntent> sentPendingIntents = new ArrayList<PendingIntent>();
             ArrayList<PendingIntent> deliveredPendingIntents = new ArrayList<PendingIntent>();
 
+            int requestCode = getUniqueInt(params)
+
             Intent sentIntent = new Intent(SENT);
             sentIntent.putExtra("params", params);
             Log.d(TAG, "autoSend#sentIntent.putExtra: " + params);
-            PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, sentIntent, 0);
+            PendingIntent sentPI = PendingIntent.getBroadcast(context, requestCode, sentIntent, 0);
 
             Intent deliveredIntent = new Intent(DELIVERED);
             deliveredIntent.putExtra("params", params);
             Log.d(TAG, "autoSend#deliveredIntent.putExtra: " + params);
-            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, deliveredIntent, 0);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, requestCode, deliveredIntent, 0);
             
             SmsManager sms = SmsManager.getDefault();
             ArrayList<String> parts = sms.divideMessage(message);

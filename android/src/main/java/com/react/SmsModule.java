@@ -180,8 +180,11 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             JSONObject jsonObject = new JSONObject(addresses);
             JSONArray addressList = jsonObject.getJSONArray("addressList");
             int n;
+            final int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                    ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    : PendingIntent.FLAG_UPDATE_CURRENT;
             if ((n = addressList.length()) > 0) {
-                PendingIntent sentIntent = PendingIntent.getBroadcast(mActivity, 0, new Intent("SENDING_SMS"), 0);
+                PendingIntent sentIntent = PendingIntent.getBroadcast(mActivity, 0, new Intent("SENDING_SMS"), flag);
                 SmsManager sms = SmsManager.getDefault();
                 for (int i = 0; i < n; i++) {
                     String address;
@@ -189,7 +192,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
                         sms.sendTextMessage(address, null, text, sentIntent, null);
                 }
             } else {
-                PendingIntent sentIntent = PendingIntent.getActivity(mActivity, 0, new Intent("android.intent.action.VIEW"), 0);
+                PendingIntent sentIntent = PendingIntent.getActivity(mActivity, 0, new Intent("android.intent.action.VIEW"), flag);
                 Intent intent = new Intent("android.intent.action.VIEW");
                 intent.putExtra("sms_body", text);
                 intent.setData(Uri.parse("sms:"));
@@ -310,16 +313,19 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             ArrayList<PendingIntent> deliveredPendingIntents = new ArrayList<PendingIntent>();
 
             int requestCode = getUniqueInt(params);
+            final int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                    ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    : PendingIntent.FLAG_UPDATE_CURRENT;
 
             Intent sentIntent = new Intent(SENT);
             sentIntent.putExtra("params", params);
             Log.d(TAG, "autoSend#sentIntent.putExtra: " + params);
-            PendingIntent sentPI = PendingIntent.getBroadcast(context, requestCode, sentIntent, 0);
+            PendingIntent sentPI = PendingIntent.getBroadcast(context, requestCode, sentIntent, flag);
 
             Intent deliveredIntent = new Intent(DELIVERED);
             deliveredIntent.putExtra("params", params);
             Log.d(TAG, "autoSend#deliveredIntent.putExtra: " + params);
-            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, requestCode, deliveredIntent, 0);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(context, requestCode, deliveredIntent, flag);
             
             SmsManager sms = SmsManager.getDefault();
             ArrayList<String> parts = sms.divideMessage(message);
